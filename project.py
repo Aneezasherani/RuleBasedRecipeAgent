@@ -11,7 +11,7 @@ except:
 
 fav_file = "favorites.json"
 
-# ---------------- FAVORITES ----------------
+# FAVORITES  
 def load_favorites():
     try:
         with open(fav_file, "r") as f:
@@ -19,14 +19,22 @@ def load_favorites():
     except:
         return []
 
-def save_favorite(recipe):
+def save_favorite(recipe_dict):
     favs = load_favorites()
-    if recipe not in favs:
-        favs.append(recipe)
-        with open(fav_file, "w") as f:
-            json.dump(favs, f, indent=4)
 
-# ---------------- MATCH LOGIC (FIXED) ----------------
+    # Avoid duplicate save
+    for f in favs:
+        if f["Recipe Name"].lower() == recipe_dict["Recipe Name"].lower():
+            return False  # Already exists
+
+    favs.append(recipe_dict)
+
+    with open(fav_file, "w") as f:
+        json.dump(favs, f, indent=4)
+    return True
+
+
+#MATCH LOGIC 
 def match_recipes(user_ing):
     exact = []
     partial = []
@@ -50,7 +58,7 @@ def match_recipes(user_ing):
     partial.sort(key=lambda x: x[2], reverse=True)
     return exact, partial
 
-# ---------------- GUI FUNCTIONS ----------------
+#  GUI FUNCTIONS 
 def search_recipes():
     user_input = entry.get().lower().strip()
     if not user_input:
@@ -94,12 +102,33 @@ def random_recipe():
 
 
 def add_to_favorites():
-    selected = entry_fav.get().strip()
-    if selected:
-        save_favorite(selected)
-        messagebox.showinfo("Saved", "Recipe added to favorites!")
-    else:
+    name = entry_fav.get().strip().lower()
+
+    if not name:
         messagebox.showwarning("Empty", "Enter a recipe name first.")
+        return
+
+    # Search recipe in CSV
+    match = df[df["Recipe Name"].str.lower() == name]
+
+    if match.empty:
+        messagebox.showerror("Not Found", "No recipe found with this name.")
+        return
+
+    row = match.iloc[0]
+
+    recipe_data = {
+        "Recipe Name": row["Recipe Name"],
+        "Ingredients": row["Ingredients"],
+        "Steps": row["Steps"]
+    }
+
+    saved = save_favorite(recipe_data)
+
+    if saved:
+        messagebox.showinfo("Saved", "Recipe added to favorites with ingredients & steps!")
+    else:
+        messagebox.showinfo("Already Exists", "This recipe is already in your favorites.")
 
 
 def view_favorites():
@@ -108,13 +137,19 @@ def view_favorites():
         messagebox.showinfo("Favorites", "You have no favorite recipes yet.")
         return
 
-    messagebox.showinfo("Your Favorites", "\n".join(favs))
+    out = ""
+    for r in favs:
+        out += f"{r['Recipe Name']}\nIngredients: {r['Ingredients']}\nSteps: {r['Steps']}\n"
+        out += "-"*40 + "\n\n"
+
+    messagebox.showinfo("Your Favorites", out)
 
 
-# ---------------- GUI DESIGN ----------------
+
+#  GUI DESIGN
 root = tk.Tk()
 root.title("Recipe Finder – AI Assistant")
-root.geometry("780x800")
+root.geometry("780x650")
 root.config(bg="#f5efff")  # soft lilac background
 
 title = tk.Label(root, text=" Recipe Recommendation Agent ",
@@ -145,7 +180,7 @@ surprise_btn = tk.Button(root, text="Surprise Me!",
 surprise_btn.pack(pady=5)
 
 # Result Box
-result_box = scrolledtext.ScrolledText(root, width=90, height=18, font=("Arial", 11), bg="#ffffff", fg="#4a4a4a")
+result_box = scrolledtext.ScrolledText(root, width=90, height=22, font=("Arial", 11), bg="#ffffff", fg="#4a4a4a")
 result_box.pack(pady=12)
 result_box.configure(state='disabled')
 

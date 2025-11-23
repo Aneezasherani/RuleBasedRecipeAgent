@@ -1,3 +1,7 @@
 [
-    "Raita"
+    {
+        "Recipe Name": "Mutton Pulao",
+        "Ingredients": "Mutton, Rice, Whole Spices, Onion, Garlic, Ginger, Yogurt",
+        "Steps": "1. Cook mutton with spices. 2. Add rice and cook until done."
+    }
 ]
